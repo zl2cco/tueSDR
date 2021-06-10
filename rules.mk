@@ -86,7 +86,7 @@ TGT_LDFLAGS += $(ARCH_FLAGS)
 TGT_LDFLAGS += -specs=nano.specs
 TGT_LDFLAGS += -Wl,--gc-sections
 # OPTIONAL
-#TGT_LDFLAGS += -Wl,-Map=$(PROJECT).map
+TGT_LDFLAGS += -Wl,-Map=$(PROJECT).map
 ifeq ($(V),99)
 TGT_LDFLAGS += -Wl,--print-gc-sections
 endif
@@ -154,20 +154,24 @@ $(PROJECT).elf: $(OBJS) $(LDSCRIPT) $(LIBDEPS)
 %.list: %.elf
 	$(OBJDUMP) -S $< > $@
 
-%.flash: %.elf
+
+%.flash: %.bin
 	@printf "  FLASH\t$<\n"
-ifeq (,$(OOCD_FILE))
-	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		-f target/$(OOCD_TARGET).cfg \
-		-c "program $(realpath $(*).elf) verify reset exit" \
-		$(NULL)
-else
-	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f $(OOCD_FILE) \
-		-c "program $(realpath $(*).elf) verify reset exit" \
-		$(NULL)
-endif
+	st-flash write $(realpath $(*).bin) 0x08000000
+# %.flash: %.elf
+# 	@printf "  FLASH\t$<\n"
+# ifeq (,$(OOCD_FILE))
+# 	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
+# 		$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
+# 		-f target/$(OOCD_TARGET).cfg \
+# 		-c "program $(realpath $(*).elf) verify reset exit" \
+# 		$(NULL)
+# else
+# 	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
+# 		$(OOCD) -f $(OOCD_FILE) \
+# 		-c "program $(realpath $(*).elf) verify reset exit" \
+# 		$(NULL)
+# endif
 
 clean:
 	rm -rf $(BUILD_DIR) $(GENERATED_BINS)
